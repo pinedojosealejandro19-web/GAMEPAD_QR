@@ -1,0 +1,34 @@
+<h2>SCREEN</h2>
+<input id="room" placeholder="ROOM (ABCD)" />
+<button id="start">Start</button>
+<pre id="log">Waiting…</pre>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+    authDomain: "pacman-86c4e.firebaseapp.com",
+    databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+    projectId: "pacman-86c4e",
+    storageBucket: "pacman-86c4e.firebasestorage.app",
+    messagingSenderId: "1044337774275",
+    appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  document.getElementById("start").onclick = () => {
+    const room = (document.getElementById("room").value.trim() || "ABCD");
+    document.getElementById("log").textContent = "Listening: " + room;
+
+    db.ref("rooms/" + room + "/input").on("value", (snap) => {
+      const data = snap.val();
+      if(!data) return;
+      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+    });
+  };
+</script>
+

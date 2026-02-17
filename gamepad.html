@@ -1,0 +1,45 @@
+<h2>Pacman Gamepad</h2>
+<input id="room" placeholder="ROOM (ABCD)" />
+<button id="join">Join</button>
+<p id="status">Not connected</p>
+
+<button id="left">⬅️</button>
+<button id="right">➡️</button>
+<button id="jump">🟦 Jump</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+    authDomain: "pacman-86c4e.firebaseapp.com",
+    databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+    projectId: "pacman-86c4e",
+    storageBucket: "pacman-86c4e.firebasestorage.app",
+    messagingSenderId: "1044337774275",
+    appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let room = "";
+  let ref = null;
+
+  document.getElementById("join").onclick = () => {
+    room = (document.getElementById("room").value.trim() || "ABCD");
+    ref = db.ref("rooms/" + room + "/input");
+    document.getElementById("status").textContent = "Connected to: " + room;
+    ref.set({ action: "connected", t: Date.now() });
+  };
+
+  function send(action){
+    if(!ref) return alert("Join a room first");
+    ref.set({ action, t: Date.now() });
+  }
+
+  document.getElementById("left").onclick = () => send("left");
+  document.getElementById("right").onclick = () => send("right");
+  document.getElementById("jump").onclick = () => send("jump");
+</script>
