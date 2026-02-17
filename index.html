@@ -30,7 +30,7 @@ html,body{
   .rotate{display:none;}
 }
 
-/* layout */
+/* main layout */
 .app{
   height:100vh;
   display:flex;
@@ -50,19 +50,19 @@ input,button{
   border:none;
 }
 
-/* controller area */
+/* controller grid fits ANY screen */
 .pad{
   flex:1;
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items:center;
   justify-items:center;
 }
 
-/* dpad */
+/* D-pad scales with screen */
 .dpad{
-  width:200px;
-  height:200px;
+  width:min(40vh, 40vw);
+  height:min(40vh, 40vw);
   position:relative;
 }
 .dpad button{
@@ -70,39 +70,41 @@ input,button{
   background:#333;
   color:#fff;
   border:none;
-  font-size:22px;
-  border-radius:10px;
+  font-size:3vh;
+  border-radius:1vh;
 }
-.up{top:0;left:60px;width:80px;height:50px;}
-.down{bottom:0;left:60px;width:80px;height:50px;}
-.left{left:0;top:60px;width:50px;height:80px;}
-.right{right:0;top:60px;width:50px;height:80px;}
+.up{top:0;left:30%;width:40%;height:25%;}
+.down{bottom:0;left:30%;width:40%;height:25%;}
+.left{left:0;top:30%;width:25%;height:40%;}
+.right{right:0;top:30%;width:25%;height:40%;}
 
-/* start select */
+/* start/select */
 .mid{
   display:flex;
-  gap:20px;
+  gap:3vh;
 }
 .mid button{
-  width:120px;
-  height:40px;
+  width:min(18vh,18vw);
+  height:min(6vh,6vw);
   background:#555;
   color:#fff;
-  border-radius:20px;
+  border-radius:3vh;
 }
 
-/* A B */
+/* A/B ALWAYS visible */
 .ab{
   display:flex;
-  gap:30px;
+  gap:4vh;
+  align-items:center;
+  justify-content:center;
 }
 .ab button{
-  width:90px;
-  height:90px;
+  width:min(14vh,14vw);
+  height:min(14vh,14vw);
   border-radius:50%;
   background:#e11d2e;
   color:#fff;
-  font-size:26px;
+  font-size:4vh;
   border:none;
 }
 </style>
@@ -121,6 +123,7 @@ input,button{
 
   <div class="pad">
 
+    <!-- D-PAD -->
     <div class="dpad">
       <button id="up" class="up">▲</button>
       <button id="down" class="down">▼</button>
@@ -128,10 +131,62 @@ input,button{
       <button id="right" class="right">▶</button>
     </div>
 
+    <!-- START SELECT -->
     <div class="mid">
       <button id="select">SELECT</button>
       <button id="start">START</button>
     </div>
 
+    <!-- A B -->
     <div class="ab">
-      <butt
+      <button id="b">B</button>
+      <button id="a">A</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+  authDomain: "pacman-86c4e.firebaseapp.com",
+  databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+  projectId: "pacman-86c4e",
+  storageBucket: "pacman-86c4e.firebasestorage.app",
+  messagingSenderId: "1044337774275",
+  appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let ref=null;
+
+document.getElementById("join").onclick=()=>{
+  const room=(document.getElementById("room").value||"ABCD").toUpperCase();
+  ref=db.ref("rooms/"+room+"/input");
+  ref.set({action:"connected",t:Date.now()});
+};
+
+function send(a){
+  if(!ref)return alert("Join first");
+  ref.set({action:a,t:Date.now()});
+}
+
+["up","down","left","right","a","b","start","select"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.onclick=()=>send(id);
+  el.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    send(id);
+  },{passive:false});
+});
+</script>
+
+</body>
+</html>
+
