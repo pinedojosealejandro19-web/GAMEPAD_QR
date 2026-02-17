@@ -1,192 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>NES Gamepad</title>
+function enterFullscreen() {
+  const el = document.documentElement;
 
-<style>
-html,body{
-  margin:0;
-  height:100%;
-  background:#111;
-  color:#fff;
-  font-family:system-ui;
-  overflow:hidden;
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // iOS Safari
+  else if (el.msRequestFullscreen) el.msRequestFullscreen();
 }
 
-/* rotate notice */
-.rotate{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#000;
-  z-index:10;
-  font-size:20px;
-}
-@media (orientation: landscape){
-  .rotate{display:none;}
-}
+/* Try auto-fullscreen after first touch */
+document.body.addEventListener("touchstart", () => {
+  enterFullscreen();
+}, { once: true });
 
-/* main layout */
-.app{
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-
-/* top bar */
-.top{
-  display:flex;
-  gap:10px;
-  padding:10px;
-}
-input,button{
-  font-size:16px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-}
-
-/* controller grid fits ANY screen */
-.pad{
-  flex:1;
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items:center;
-  justify-items:center;
-}
-
-/* D-pad scales with screen */
-.dpad{
-  width:min(40vh, 40vw);
-  height:min(40vh, 40vw);
-  position:relative;
-}
-.dpad button{
-  position:absolute;
-  background:#333;
-  color:#fff;
-  border:none;
-  font-size:3vh;
-  border-radius:1vh;
-}
-.up{top:0;left:30%;width:40%;height:25%;}
-.down{bottom:0;left:30%;width:40%;height:25%;}
-.left{left:0;top:30%;width:25%;height:40%;}
-.right{right:0;top:30%;width:25%;height:40%;}
-
-/* start/select */
-.mid{
-  display:flex;
-  gap:3vh;
-}
-.mid button{
-  width:min(18vh,18vw);
-  height:min(6vh,6vw);
-  background:#555;
-  color:#fff;
-  border-radius:3vh;
-}
-
-/* A/B ALWAYS visible */
-.ab{
-  display:flex;
-  gap:4vh;
-  align-items:center;
-  justify-content:center;
-}
-.ab button{
-  width:min(14vh,14vw);
-  height:min(14vh,14vw);
-  border-radius:50%;
-  background:#e11d2e;
-  color:#fff;
-  font-size:4vh;
-  border:none;
-}
-</style>
-</head>
-
-<body>
-
-<div class="rotate">Rotate phone to landscape</div>
-
-<div class="app">
-
-  <div class="top">
-    <input id="room" placeholder="ROOM">
-    <button id="join">JOIN</button>
-  </div>
-
-  <div class="pad">
-
-    <!-- D-PAD -->
-    <div class="dpad">
-      <button id="up" class="up">▲</button>
-      <button id="down" class="down">▼</button>
-      <button id="left" class="left">◀</button>
-      <button id="right" class="right">▶</button>
-    </div>
-
-    <!-- START SELECT -->
-    <div class="mid">
-      <button id="select">SELECT</button>
-      <button id="start">START</button>
-    </div>
-
-    <!-- A B -->
-    <div class="ab">
-      <button id="b">B</button>
-      <button id="a">A</button>
-    </div>
-
-  </div>
-</div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
-  authDomain: "pacman-86c4e.firebaseapp.com",
-  databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
-  projectId: "pacman-86c4e",
-  storageBucket: "pacman-86c4e.firebasestorage.app",
-  messagingSenderId: "1044337774275",
-  appId: "1:1044337774275:web:362fcd603a473c04e95c76"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let ref=null;
-
-document.getElementById("join").onclick=()=>{
-  const room=(document.getElementById("room").value||"ABCD").toUpperCase();
-  ref=db.ref("rooms/"+room+"/input");
-  ref.set({action:"connected",t:Date.now()});
-};
-
-function send(a){
-  if(!ref)return alert("Join first");
-  ref.set({action:a,t:Date.now()});
-}
-
-["up","down","left","right","a","b","start","select"].forEach(id=>{
-  const el=document.getElementById(id);
-  el.onclick=()=>send(id);
-  el.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    send(id);
-  },{passive:false});
-});
-</script>
-
-</body>
-</html>
-
+/* Also allow manual fullscreen */
+const fsBtn = document.createElement("button");
+fsBtn.textContent = "FULLSCREEN";
+fsBtn.style.position = "fixed";
+fsBtn.style.bottom = "10px";
+fsBtn.style.right = "10px";
+fsBtn.style.zIndex = "999";
+fsBtn.style.padding = "10px";
+fsBtn.style.borderRadius = "10px";
+fsBtn.onclick = enterFullscreen;
+document.body.appendChild(fsBtn);
