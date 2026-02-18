@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pac-Man Game - Main Screen</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pac-Man with Phone Controller</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -15,8 +15,6 @@
       font-family: Arial, sans-serif;
       color: white;
     }
-    
-    /* Left side - Game */
     #gameContainer {
       flex: 1;
       display: flex;
@@ -24,14 +22,11 @@
       align-items: center;
       padding: 20px;
     }
-    
     canvas {
       border: 4px solid yellow;
       background: black;
       box-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
     }
-    
-    /* Right side - QR Code Panel */
     #sidePanel {
       width: 400px;
       padding: 40px 30px;
@@ -44,14 +39,12 @@
       justify-content: center;
       box-shadow: inset 2px 0 10px rgba(0, 0, 0, 0.5);
     }
-    
     #sidePanel h2 {
       font-size: 32px;
       margin-bottom: 30px;
       color: #ffff00;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     }
-    
     #qrcode {
       margin: 20px auto;
       padding: 20px;
@@ -59,12 +52,6 @@
       border-radius: 10px;
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
     }
-    
-    #qrcode img {
-      max-width: 100%;
-      height: auto;
-    }
-    
     #roomCode {
       font-size: 28px;
       font-weight: bold;
@@ -75,7 +62,33 @@
       border: 2px solid #ffff00;
       border-radius: 8px;
     }
-    
+    #playerList {
+      margin-top: 30px;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #playerList h3 {
+      color: #ffff00;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    .player-item {
+      background: rgba(255, 255, 0, 0.1);
+      padding: 12px;
+      margin: 8px 0;
+      border-left: 3px solid #ffff00;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #fff;
+    }
+    .player-item.active {
+      background: rgba(0, 255, 0, 0.2);
+      border-left-color: #00ff00;
+    }
     #instructions {
       margin-top: 30px;
       font-size: 13px;
@@ -85,19 +98,20 @@
   </style>
 </head>
 <body>
-  <!-- LEFT SIDE - GAME CANVAS -->
   <div id="gameContainer">
     <canvas id="gameCanvas" width="560" height="620"></canvas>
   </div>
-  
-  <!-- RIGHT SIDE - QR CODE & INFO -->
+
   <div id="sidePanel">
     <h2>📱 Scan to Play!</h2>
-    
     <div id="qrcode"></div>
-    
     <div id="roomCode">Room: Loading...</div>
-    
+
+    <div id="playerList">
+      <h3>👥 Connected Players:</h3>
+      <div id="players">Waiting for players...</div>
+    </div>
+
     <div id="instructions">
       <strong>How to Play:</strong><br>
       1️⃣ Scan QR code with your phone<br>
@@ -106,34 +120,33 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
-  
+  <!-- Firebase (COMPAT) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
   <!-- QR Code Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
+
   <script>
-    // ===== FIREBASE CONFIG =====
+    // ===== FIREBASE CONFIG (YOUR REAL CONFIG) =====
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+      authDomain: "pacman-86c4e.firebaseapp.com",
+      databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+      projectId: "pacman-86c4e",
+      storageBucket: "pacman-86c4e.firebasestorage.app",
+      messagingSenderId: "1044337774275",
+      appId: "1:1044337774275:web:362fcd603a473c04e95c76"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ===== GAME LOGIC =====
+    // ===== GAME SETUP =====
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    let gameState = {
+    const gameState = {
       pacman: { x: 280, y: 310, direction: 0, nextDirection: 0 },
       ghosts: [
         { x: 240, y: 210, color: '#ff0000', dx: 1, dy: 0 },
@@ -142,125 +155,74 @@
       ],
       dots: [],
       score: 0,
-      gameRunning: false,
       roomCode: null,
       gameId: null
     };
 
-    // Generate unique room code
     function generateRoomCode() {
       return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
-
-    // Initialize dots on canvas
-    function initDots() {
-      gameState.dots = [];
-      for (let x = 40; x < 540; x += 20) {
-        for (let y = 60; y < 600; y += 20) {
-          if (!isWall(x, y)) {
-            gameState.dots.push({ x, y, eaten: false });
-          }
-        }
-      }
     }
 
     function isWall(x, y) {
       return (x < 20 || x > 540 || y < 40 || y > 600);
     }
 
-    // Create a new game room in Firebase
-    function createGameRoom() {
-      gameState.roomCode = generateRoomCode();
-      gameState.gameId = db.ref('games').push().key;
-
-      const gameRef = db.ref(`games/${gameState.gameId}`);
-      
-      gameRef.set({
-        roomCode: gameState.roomCode,
-        status: 'active',
-        host: true,
-        createdAt: Date.now(),
-        gameState: {
-          score: 0,
-          pacmanX: gameState.pacman.x,
-          pacmanY: gameState.pacman.y
+    function initDots() {
+      gameState.dots = [];
+      for (let x = 40; x < 540; x += 20) {
+        for (let y = 60; y < 600; y += 20) {
+          if (!isWall(x, y)) gameState.dots.push({ x, y, eaten: false });
         }
-      });
-
-      // Listen for player actions
-      gameRef.child('actions').on('child_changed', (snapshot) => {
-        const action = snapshot.val();
-        if (action) {
-          handlePlayerInput(action);
-        }
-      });
-
-      // Display QR Code
-      displayQRCode();
-      document.getElementById('roomCode').textContent = `Room: ${gameState.roomCode}`;
-      
-      // Start game loop
-      gameState.gameRunning = true;
-      initDots();
-      gameLoop();
-    }
-
-    // Display QR Code
-    function displayQRCode() {
-      const controllerUrl = `${window.location.origin}/controller.html?room=${gameState.roomCode}&gameId=${gameState.gameId}`;
-      
-      // Clear previous QR code
-      const qrcodeDiv = document.getElementById('qrcode');
-      qrcodeDiv.innerHTML = '';
-      
-      new QRCode(qrcodeDiv, {
-        text: controllerUrl,
-        width: 220,
-        height: 220,
-        colorDark: '#000000',
-        colorLight: '#ffffff'
-      });
-    }
-
-    // Handle player input from controller
-    function handlePlayerInput(action) {
-      switch(action) {
-        case 'up': 
-          if (gameState.pacman.direction !== 1) gameState.pacman.nextDirection = -1;
-          break;
-        case 'down': 
-          if (gameState.pacman.direction !== -1) gameState.pacman.nextDirection = 1;
-          break;
-        case 'left': 
-          if (gameState.pacman.direction !== 2) gameState.pacman.nextDirection = -2;
-          break;
-        case 'right': 
-          if (gameState.pacman.direction !== -2) gameState.pacman.nextDirection = 2;
-          break;
       }
     }
 
-    // Update Pac-Man position
+    function updatePlayerList(playersObj) {
+      const playersDiv = document.getElementById('players');
+      const players = playersObj ? Object.values(playersObj) : [];
+      if (players.length === 0) {
+        playersDiv.innerHTML = '<div class="player-item">Waiting for players...</div>';
+        return;
+      }
+      playersDiv.innerHTML = players
+        .map(p => `<div class="player-item active">✓ ${escapeHtml(p.name || "Player")}</div>`)
+        .join('');
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[m]));
+    }
+
+    function handlePlayerInput(action) {
+      switch (action) {
+        case 'up':    gameState.pacman.nextDirection = -1; break;
+        case 'down':  gameState.pacman.nextDirection = 1;  break;
+        case 'left':  gameState.pacman.nextDirection = -2; break;
+        case 'right': gameState.pacman.nextDirection = 2;  break;
+      }
+    }
+
     function updatePacman() {
       const speed = 5;
       let newX = gameState.pacman.x;
       let newY = gameState.pacman.y;
 
-      // Try next direction first
-      if (gameState.pacman.nextDirection === -1) newY -= speed; // up
-      else if (gameState.pacman.nextDirection === 1) newY += speed; // down
-      else if (gameState.pacman.nextDirection === -2) newX -= speed; // left
-      else if (gameState.pacman.nextDirection === 2) newX += speed; // right
+      // Try next direction
+      if (gameState.pacman.nextDirection === -1) newY -= speed;
+      else if (gameState.pacman.nextDirection === 1) newY += speed;
+      else if (gameState.pacman.nextDirection === -2) newX -= speed;
+      else if (gameState.pacman.nextDirection === 2) newX += speed;
 
       if (!isWall(newX, newY)) {
         gameState.pacman.x = newX;
         gameState.pacman.y = newY;
         gameState.pacman.direction = gameState.pacman.nextDirection;
       } else {
-        // Continue in current direction
+        // Continue current direction
         newX = gameState.pacman.x;
         newY = gameState.pacman.y;
-        
+
         if (gameState.pacman.direction === -1) newY -= speed;
         else if (gameState.pacman.direction === 1) newY += speed;
         else if (gameState.pacman.direction === -2) newX -= speed;
@@ -273,97 +235,82 @@
       }
 
       // Eat dots
-      gameState.dots.forEach(dot => {
-        if (Math.abs(dot.x - gameState.pacman.x) < 10 && Math.abs(dot.y - gameState.pacman.y) < 10) {
-          if (!dot.eaten) {
-            dot.eaten = true;
-            gameState.score += 10;
-          }
+      for (const dot of gameState.dots) {
+        if (!dot.eaten && Math.abs(dot.x - gameState.pacman.x) < 10 && Math.abs(dot.y - gameState.pacman.y) < 10) {
+          dot.eaten = true;
+          gameState.score += 10;
         }
-      });
+      }
 
-      // Update score in Firebase
+      // Save score
       if (gameState.gameId) {
         db.ref(`games/${gameState.gameId}/gameState/score`).set(gameState.score);
       }
     }
 
-    // Update ghost positions (simple AI)
     function updateGhosts() {
-      gameState.ghosts.forEach(ghost => {
-        let newX = ghost.x + ghost.dx * 2;
-        let newY = ghost.y + ghost.dy * 2;
+      for (const ghost of gameState.ghosts) {
+        const newX = ghost.x + ghost.dx * 2;
+        const newY = ghost.y + ghost.dy * 2;
 
         if (isWall(newX, newY)) {
-          // Change direction randomly
-          const directions = [
-            { dx: 1, dy: 0 },
-            { dx: -1, dy: 0 },
-            { dx: 0, dy: 1 },
-            { dx: 0, dy: -1 }
+          const dirs = [
+            { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
           ];
-          const newDir = directions[Math.floor(Math.random() * directions.length)];
-          ghost.dx = newDir.dx;
-          ghost.dy = newDir.dy;
+          const nd = dirs[Math.floor(Math.random() * dirs.length)];
+          ghost.dx = nd.dx; ghost.dy = nd.dy;
         } else {
-          ghost.x = newX;
-          ghost.y = newY;
+          ghost.x = newX; ghost.y = newY;
         }
-      });
+      }
     }
 
-    // Draw game canvas
     function draw() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw border
       ctx.strokeStyle = '#0066ff';
       ctx.lineWidth = 3;
       ctx.strokeRect(20, 40, 520, 560);
 
-      // Draw dots
+      // Dots
       ctx.fillStyle = '#ffff00';
-      gameState.dots.forEach(dot => {
+      for (const dot of gameState.dots) {
         if (!dot.eaten) {
           ctx.beginPath();
           ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
           ctx.fill();
         }
-      });
+      }
 
-      // Draw Pac-Man
+      // Pac-Man
       ctx.fillStyle = '#ffff00';
       ctx.beginPath();
       ctx.arc(gameState.pacman.x, gameState.pacman.y, 8, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw ghosts
-      gameState.ghosts.forEach(ghost => {
+      // Ghosts
+      for (const ghost of gameState.ghosts) {
         ctx.fillStyle = ghost.color;
         ctx.beginPath();
         ctx.arc(ghost.x, ghost.y, 8, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Ghost eyes
+
         ctx.fillStyle = 'white';
         ctx.beginPath();
         ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
         ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
 
-      // Draw score
       ctx.fillStyle = '#ffff00';
       ctx.font = 'bold 20px Arial';
       ctx.fillText(`Score: ${gameState.score}`, 30, 30);
-      
-      // Draw remaining dots counter
-      const dotsRemaining = gameState.dots.filter(d => !d.eaten).length;
-      ctx.fillText(`Dots: ${dotsRemaining}`, 400, 30);
+
+      const left = gameState.dots.filter(d => !d.eaten).length;
+      ctx.fillText(`Dots: ${left}`, 400, 30);
     }
 
-    // Main game loop
     function gameLoop() {
       updatePacman();
       updateGhosts();
@@ -371,16 +318,65 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Initialize game on page load
-    window.addEventListener('load', () => {
-      createGameRoom();
-    });
+    function displayQRCode() {
+      // Works on GitHub Pages too:
+      // base = current folder (keeps /repo/)
+      const base = location.href.substring(0, location.href.lastIndexOf("/") + 1);
+      const controllerUrl = `${base}controller.html?room=${encodeURIComponent(gameState.roomCode)}&gameId=${encodeURIComponent(gameState.gameId)}`;
 
-    // Clean up Firebase references on page unload
+      const qrcodeDiv = document.getElementById('qrcode');
+      qrcodeDiv.innerHTML = '';
+
+      new QRCode(qrcodeDiv, {
+        text: controllerUrl,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff'
+      });
+    }
+
+    function createGameRoom() {
+      gameState.roomCode = generateRoomCode();
+      gameState.gameId = db.ref('games').push().key;
+
+      const gameRef = db.ref(`games/${gameState.gameId}`);
+
+      gameRef.set({
+        roomCode: gameState.roomCode,
+        status: 'active',
+        createdAt: Date.now(),
+        players: {},
+        actions: { lastAction: null },
+        gameState: {
+          score: 0,
+          pacmanX: gameState.pacman.x,
+          pacmanY: gameState.pacman.y
+        }
+      });
+
+      // Listen for controller actions (FIXED)
+      gameRef.child('actions/lastAction').on('value', (snapshot) => {
+        const action = snapshot.val();
+        if (action) handlePlayerInput(action);
+      });
+
+      // Listen for player list
+      gameRef.child('players').on('value', (snapshot) => {
+        updatePlayerList(snapshot.val() || {});
+      });
+
+      displayQRCode();
+      document.getElementById('roomCode').textContent = `Room: ${gameState.roomCode}`;
+
+      initDots();
+      gameLoop();
+    }
+
+    window.addEventListener('load', createGameRoom);
+
     window.addEventListener('beforeunload', () => {
-      if (gameState.gameId) {
-        db.ref(`games/${gameState.gameId}`).remove();
-      }
+      if (gameState.gameId) db.ref(`games/${gameState.gameId}`).remove();
     });
   </script>
 </body>
