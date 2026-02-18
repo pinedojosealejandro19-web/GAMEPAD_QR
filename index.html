@@ -6,8 +6,8 @@
   <title>Pac-Man Controller</title>
 
   <style>
-    *{ margin:0; padding:0; box-sizing:border-box; }
-    html,body{ width:100%; height:100%; overflow:hidden; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; }
     body{
       display:flex;
       flex-direction:column;
@@ -16,19 +16,14 @@
       background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
       font-family: Arial, sans-serif;
       color:#fff;
-      padding:20px;
-      gap:20px;
+      padding: 20px;
+      gap: 20px;
       touch-action:none;
     }
 
-    #status{
-      font-size:16px;
-      text-align:center;
-      height:25px;
-      min-height:25px;
-    }
-    .status-ok{ color:#00ff00; font-weight:bold; }
-    .status-error{ color:#ff0000; font-weight:bold; }
+    #status{ height: 26px; font-size: 16px; text-align:center; }
+    .ok{ color:#00ff00; font-weight:bold; }
+    .bad{ color:#ff0000; font-weight:bold; }
 
     .gamepad{
       display:grid;
@@ -51,14 +46,13 @@
       -webkit-user-select:none;
       -webkit-touch-callout:none;
       box-shadow: 0 6px 0 #cccc00;
-      font-family: Arial, sans-serif;
     }
     button:active{
       transform: translateY(6px);
       box-shadow: 0 0 0 #cccc00;
       background: linear-gradient(145deg, #ffdd00, #ffff00);
     }
-    button:disabled{ opacity:.5; cursor:not-allowed; }
+    button:disabled{ opacity: 0.5; cursor:not-allowed; }
 
     #up{ grid-column:2; grid-row:1; }
     #left{ grid-column:1; grid-row:2; }
@@ -71,10 +65,10 @@
   <div id="status">Connecting...</div>
 
   <div class="gamepad">
-    <button id="up" disabled>⬆️</button>
-    <button id="left" disabled>⬅️</button>
-    <button id="down" disabled>⬇️</button>
-    <button id="right" disabled>➡️</button>
+    <button id="up">⬆️</button>
+    <button id="left">⬅️</button>
+    <button id="down">⬇️</button>
+    <button id="right">➡️</button>
   </div>
 
   <!-- Firebase (COMPAT) -->
@@ -95,100 +89,45 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const statusDiv = document.getElementById("status");
+    const statusEl = document.getElementById("status");
     const params = new URLSearchParams(location.search);
-    const room = params.get("room");
-    const gameId = params.get("gameId");
+    const gameId = params.get("gameId") || "DEMO_GAME";
 
-    let playerConnected = false;
-    let lastActionTime = 0;
-
-    function enableButtons(on){
-      document.querySelectorAll(".gamepad button").forEach(b => b.disabled = !on);
+    function setStatusOk(msg){
+      statusEl.textContent = msg;
+      statusEl.className = "ok";
+    }
+    function setStatusBad(msg){
+      statusEl.textContent = msg;
+      statusEl.className = "bad";
     }
 
-    function randomName(){
-      const animals = ["Panda","Fox","Tiger","Koala","Shark","Eagle","Wolf","Otter"];
-      return animals[Math.floor(Math.random()*animals.length)] + "-" + Math.floor(100 + Math.random()*900);
-    }
-
-    function connect(){
-      if(!room || !gameId){
-        statusDiv.textContent = "❌ Invalid QR Code";
-        statusDiv.className = "status-error";
-        enableButtons(false);
-        return;
-      }
-
-      const gameRef = db.ref(`games/${gameId}`);
-
-      gameRef.once("value", snap => {
-        if(!snap.exists()){
-          statusDiv.textContent = "❌ Game not found";
-          statusDiv.className = "status-error";
-          enableButtons(false);
-          playerConnected = false;
-          return;
-        }
-
-        // Register player (optional)
-        const playerId = db.ref().push().key;
-        gameRef.child(`players/${playerId}`).set({
-          name: randomName(),
-          joinedAt: Date.now()
-        });
-
-        playerConnected = true;
-        statusDiv.textContent = "✅ Connected!";
-        statusDiv.className = "status-ok";
-        enableButtons(true);
+    function send(action){
+      db.ref(`games/${gameId}/actions/lastAction`).set({
+        action,
+        t: Date.now()
+      }, (err) => {
+        if (err) setStatusBad("❌ Send failed");
+        else setStatusOk("✅ Connected");
       });
     }
 
-    function sendInput(action){
-      if(!playerConnected || !gameId) return;
-
-      const now = Date.now();
-      if(now - lastActionTime < 50) return; // throttle
-      lastActionTime = now;
-
-      db.ref(`games/${gameId}/actions/lastAction`).set(action, (err) => {
-        if(err){
-          console.error(err);
-          statusDiv.textContent = "⚠️ Connection lost";
-          statusDiv.className = "status-error";
-          playerConnected = false;
-          enableButtons(false);
-        }
-      });
-    }
-
+    // Touch + click
     ["up","down","left","right"].forEach(id => {
       const el = document.getElementById(id);
 
-      el.addEventListener("click", () => sendInput(id));
+      el.addEventListener("click", () => send(id));
 
       el.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        sendInput(id);
-      }, {passive:false});
+        send(id);
+      }, { passive:false });
     });
 
-    // Connection monitor
+    // Connection indicator
     db.ref(".info/connected").on("value", snap => {
-      if(snap.val() === true){
-        if(!playerConnected) connect();
-      } else {
-        statusDiv.textContent = "❌ No internet";
-        statusDiv.className = "status-error";
-        playerConnected = false;
-        enableButtons(false);
-      }
-    });
-
-    window.addEventListener("load", () => {
-      enableButtons(false);
-      setTimeout(connect, 200);
+      if (snap.val() === true) setStatusOk("✅ Connected");
+      else setStatusBad("❌ No internet");
     });
   </script>
 </body>
