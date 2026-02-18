@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pac-Man with Phone Controller</title>
+  <title>Pac-Man Game - Main Screen</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -76,37 +76,6 @@
       border-radius: 8px;
     }
     
-    #playerList {
-      margin-top: 30px;
-      text-align: left;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 15px;
-      border-radius: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    
-    #playerList h3 {
-      color: #ffff00;
-      margin-bottom: 15px;
-      font-size: 18px;
-    }
-    
-    .player-item {
-      background: rgba(255, 255, 0, 0.1);
-      padding: 12px;
-      margin: 8px 0;
-      border-left: 3px solid #ffff00;
-      border-radius: 5px;
-      font-size: 14px;
-      color: #fff;
-    }
-    
-    .player-item.active {
-      background: rgba(0, 255, 0, 0.2);
-      border-left-color: #00ff00;
-    }
-    
     #instructions {
       margin-top: 30px;
       font-size: 13px;
@@ -128,11 +97,6 @@
     <div id="qrcode"></div>
     
     <div id="roomCode">Room: Loading...</div>
-    
-    <div id="playerList">
-      <h3>👥 Connected Players:</h3>
-      <div id="players">Waiting for players...</div>
-    </div>
     
     <div id="instructions">
       <strong>How to Play:</strong><br>
@@ -179,7 +143,6 @@
       dots: [],
       score: 0,
       gameRunning: false,
-      players: {},
       roomCode: null,
       gameId: null
     };
@@ -217,7 +180,6 @@
         status: 'active',
         host: true,
         createdAt: Date.now(),
-        players: {},
         gameState: {
           score: 0,
           pacmanX: gameState.pacman.x,
@@ -231,12 +193,6 @@
         if (action) {
           handlePlayerInput(action);
         }
-      });
-
-      // Listen for player connections
-      gameRef.child('players').on('value', (snapshot) => {
-        gameState.players = snapshot.val() || {};
-        updatePlayerList();
       });
 
       // Display QR Code
@@ -264,20 +220,6 @@
         colorDark: '#000000',
         colorLight: '#ffffff'
       });
-    }
-
-    // Update player list display
-    function updatePlayerList() {
-      const playersDiv = document.getElementById('players');
-      const playerCount = Object.keys(gameState.players).length;
-
-      if (playerCount === 0) {
-        playersDiv.innerHTML = '<div class="player-item">Waiting for players...</div>';
-      } else {
-        playersDiv.innerHTML = Object.values(gameState.players)
-          .map(player => `<div class="player-item active">✓ ${player.name}</div>`)
-          .join('');
-      }
     }
 
     // Handle player input from controller
