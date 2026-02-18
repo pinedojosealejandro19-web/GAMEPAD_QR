@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Pac-Man Controller</title>
+  <title>Pac-Man Gamepad</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -13,67 +13,61 @@
     }
     body {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      flex-direction: row;
+      justify-content: space-around;
       align-items: center;
       background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
       font-family: Arial, sans-serif;
       color: white;
       padding: 20px;
       touch-action: none;
+      gap: 40px;
     }
     
-    /* Top - Status */
-    #topSection {
-      width: 100%;
-      text-align: center;
-    }
-    
-    #status {
-      font-size: 16px;
-      margin-bottom: 10px;
-      text-align: center;
-      height: 25px;
-    }
-    
-    .status-ok {
-      color: #00ff00;
-      font-weight: bold;
-    }
-    
-    .status-error {
-      color: #ff0000;
-      font-weight: bold;
-    }
-    
-    #roomInfo {
-      font-size: 14px;
-      color: #aaa;
-    }
-    
-    /* Middle - Gamepad */
-    #gamepadSection {
-      flex: 1;
+    /* Left - Status */
+    #statusSection {
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      gap: 15px;
+      min-width: 150px;
     }
     
+    #status {
+      font-size: 18px;
+      text-align: center;
+      font-weight: bold;
+      height: 30px;
+    }
+    
+    .status-ok {
+      color: #00ff00;
+    }
+    
+    .status-error {
+      color: #ff0000;
+    }
+    
+    #roomLabel {
+      font-size: 14px;
+      color: #aaa;
+    }
+    
+    /* Middle - Gamepad (Large for Landscape) */
     .gamepad {
       display: grid;
-      grid-template-columns: repeat(3, 90px);
-      grid-gap: 12px;
-      margin: 30px 0;
+      grid-template-columns: repeat(3, 120px);
+      grid-gap: 20px;
     }
     
     button {
-      width: 90px;
-      height: 90px;
-      font-size: 32px;
+      width: 120px;
+      height: 120px;
+      font-size: 50px;
       font-weight: bold;
       border: none;
-      border-radius: 12px;
+      border-radius: 15px;
       cursor: pointer;
       background: linear-gradient(145deg, #ffff00, #ffdd00);
       color: #000;
@@ -81,13 +75,12 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      box-shadow: 0 6px 0 #cccc00;
+      box-shadow: 0 8px 0 #cccc00;
       font-family: Arial, sans-serif;
-      active: false;
     }
     
     button:active {
-      transform: translateY(6px);
+      transform: translateY(8px);
       box-shadow: 0 0 0 #cccc00;
       background: linear-gradient(145deg, #ffdd00, #ffff00);
     }
@@ -102,72 +95,76 @@
     #down { grid-column: 2; grid-row: 2; }
     #right { grid-column: 3; grid-row: 2; }
     
-    /* Bottom - Score & Info */
-    #bottomSection {
-      width: 100%;
-      text-align: center;
+    /* Right - Instructions */
+    #infoSection {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      min-width: 150px;
     }
     
-    #scoreDisplay {
-      font-size: 20px;
-      font-weight: bold;
+    #infoSection h3 {
+      font-size: 16px;
       color: #ffff00;
-      margin-bottom: 10px;
-      padding: 10px;
-      background: rgba(255, 255, 0, 0.1);
-      border: 2px solid #ffff00;
-      border-radius: 8px;
     }
     
-    #playerInfo {
-      font-size: 12px;
+    #infoSection p {
+      font-size: 13px;
       color: #aaa;
+      text-align: center;
       line-height: 1.5;
     }
     
-    @media (max-height: 600px) {
+    /* Mobile/Small Screen Adjustments */
+    @media (max-height: 500px) {
       .gamepad {
-        grid-template-columns: repeat(3, 70px);
-        grid-gap: 8px;
+        grid-template-columns: repeat(3, 90px);
+        grid-gap: 12px;
       }
       
       button {
-        width: 70px;
-        height: 70px;
-        font-size: 24px;
-        box-shadow: 0 4px 0 #cccc00;
+        width: 90px;
+        height: 90px;
+        font-size: 36px;
+        box-shadow: 0 5px 0 #cccc00;
       }
       
       button:active {
-        transform: translateY(4px);
+        transform: translateY(5px);
+      }
+      
+      #status {
+        font-size: 16px;
+      }
+      
+      body {
+        gap: 20px;
+        padding: 10px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- TOP - Status & Room Info -->
-  <div id="topSection">
+  <!-- LEFT - Status Info -->
+  <div id="statusSection">
     <div id="status">Connecting...</div>
-    <div id="roomInfo">Loading...</div>
+    <div id="roomLabel">Room: --</div>
   </div>
   
   <!-- MIDDLE - Gamepad Controls -->
-  <div id="gamepadSection">
-    <h2 style="margin-bottom: 10px;">🎮 Game Controller</h2>
-    <div class="gamepad">
-      <button id="up" disabled>⬆️</button>
-      <button id="left" disabled>⬅️</button>
-      <button id="down" disabled>⬇️</button>
-      <button id="right" disabled>➡️</button>
-    </div>
+  <div class="gamepad">
+    <button id="up" disabled>⬆️</button>
+    <button id="left" disabled>⬅️</button>
+    <button id="down" disabled>⬇️</button>
+    <button id="right" disabled>➡️</button>
   </div>
   
-  <!-- BOTTOM - Score & Info -->
-  <div id="bottomSection">
-    <div id="scoreDisplay">Score: 0</div>
-    <div id="playerInfo">
-      Use the arrow buttons to control Pac-Man
-    </div>
+  <!-- RIGHT - Info -->
+  <div id="infoSection">
+    <h3>🎮 Gamepad</h3>
+    <p>Use the arrows to control Pac-Man</p>
   </div>
 
   <!-- Firebase SDK -->
@@ -195,12 +192,9 @@
     const roomCode = urlParams.get('room');
     const gameId = urlParams.get('gameId');
     const statusDiv = document.getElementById('status');
-    const roomInfoDiv = document.getElementById('roomInfo');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const playerInfoDiv = document.getElementById('playerInfo');
+    const roomLabel = document.getElementById('roomLabel');
 
     let playerConnected = false;
-    let playerName = '';
     let lastActionTime = 0;
 
     // Check connection to game
@@ -208,10 +202,12 @@
       if (!roomCode || !gameId) {
         statusDiv.textContent = '❌ Invalid QR Code';
         statusDiv.className = 'status-error';
-        roomInfoDiv.textContent = 'Please scan a valid QR code';
+        roomLabel.textContent = 'Room: Invalid';
         disableButtons();
         return;
       }
+
+      roomLabel.textContent = `Room: ${roomCode}`;
 
       const gameRef = db.ref(`games/${gameId}`);
       
@@ -220,38 +216,11 @@
           playerConnected = true;
           statusDiv.textContent = '✅ Connected!';
           statusDiv.className = 'status-ok';
-          roomInfoDiv.textContent = `Room: ${roomCode}`;
-          playerInfoDiv.textContent = 'Ready to play! Use arrows to control Pac-Man';
           enableButtons();
-          registerPlayer();
-          listenForGameUpdates();
         } else {
           statusDiv.textContent = '❌ Game not found';
           statusDiv.className = 'status-error';
-          roomInfoDiv.textContent = 'The game session has ended';
           disableButtons();
-        }
-      });
-    }
-
-    // Register player in Firebase
-    function registerPlayer() {
-      playerName = `Player ${Math.floor(Math.random() * 10000)}`;
-      const gameRef = db.ref(`games/${gameId}/players/${Date.now()}`);
-      gameRef.set({
-        name: playerName,
-        joinedAt: Date.now()
-      });
-    }
-
-    // Listen for game updates
-    function listenForGameUpdates() {
-      const gameRef = db.ref(`games/${gameId}/gameState`);
-      
-      gameRef.on('value', (snapshot) => {
-        const gameData = snapshot.val();
-        if (gameData && gameData.score !== undefined) {
-          scoreDisplay.textContent = `Score: ${gameData.score}`;
         }
       });
     }
@@ -261,7 +230,7 @@
       if (!playerConnected || !gameId) return;
 
       const now = Date.now();
-      // Throttle inputs to avoid spam (50ms delay)
+      // Throttle inputs (50ms delay to avoid spam)
       if (now - lastActionTime < 50) return;
       lastActionTime = now;
 
@@ -308,7 +277,7 @@
         el.style.background = 'linear-gradient(145deg, #ffff00, #ffdd00)';
       });
 
-      // Mouse events (for testing on desktop)
+      // Mouse events (for testing)
       el.addEventListener('mousedown', () => {
         el.style.background = 'linear-gradient(145deg, #ffdd00, #ffff00)';
         sendInput(button);
