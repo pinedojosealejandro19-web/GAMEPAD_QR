@@ -2,6 +2,9 @@
 ONLINE GAME:
 https://pinedojosealejandro19-web.github.io/PACMAN_INMERSIVE/
 
+NOW FISICAL CONTROLLER COMPARTIBLE:
+only D-pad and A/B buttons
+
 INSPO:
 https://www.elumenati.com/news/3d-pacman-immersive-gaming-at-the-telfair-museum/
 
