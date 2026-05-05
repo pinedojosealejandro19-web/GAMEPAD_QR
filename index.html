@@ -2329,6 +2329,136 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+
+/* ==========================
+   REAL USB / WIRELESS GAMEPAD SUPPORT
+   D-PAD + MENU BUTTONS:
+   - D-pad = movement only
+   - A / Cross = start, continue, resume
+   - B / Circle = pause / resume
+   - Analog stick intentionally disabled
+========================== */
+let connectedGamepadIndex = null;
+let lastGamepadButtonState = {};
+const GAMEPAD_DPAD_REPEAT_MS = 90;
+let lastGamepadDpadActionTime = 0;
+let lastGamepadDpadDirection = null;
+
+window.addEventListener("gamepadconnected", (event) => {
+  connectedGamepadIndex = event.gamepad.index;
+  console.log("Gamepad connected:", event.gamepad.id);
+
+  if (roomStatus) {
+    roomStatus.textContent = "Gamepad connected. D-pad + A/B enabled.";
+  }
+});
+
+window.addEventListener("gamepaddisconnected", (event) => {
+  if (connectedGamepadIndex === event.gamepad.index) {
+    connectedGamepadIndex = null;
+  }
+
+  console.log("Gamepad disconnected:", event.gamepad.id);
+
+  if (roomStatus) {
+    roomStatus.textContent = "Gamepad disconnected.";
+  }
+});
+
+function getActiveGamepad() {
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+  if (connectedGamepadIndex !== null && gamepads[connectedGamepadIndex]) {
+    return gamepads[connectedGamepadIndex];
+  }
+
+  for (const gamepad of gamepads) {
+    if (gamepad) {
+      connectedGamepadIndex = gamepad.index;
+      return gamepad;
+    }
+  }
+
+  return null;
+}
+
+function isGamepadButtonDown(gamepad, buttonIndex) {
+  const button = gamepad?.buttons?.[buttonIndex];
+  return !!button && button.pressed;
+}
+
+function gamepadButtonPressedOnce(gamepad, buttonIndex) {
+  const pressed = isGamepadButtonDown(gamepad, buttonIndex);
+  const key = `${gamepad.index}-${buttonIndex}`;
+  const wasPressed = lastGamepadButtonState[key] || false;
+
+  lastGamepadButtonState[key] = pressed;
+
+  return pressed && !wasPressed;
+}
+
+function isGamepadStartPressed() {
+  const gamepad = getActiveGamepad();
+  if (!gamepad) return false;
+
+  // Button 0 = A / Cross in standard browser mapping.
+  return isGamepadButtonDown(gamepad, 0);
+}
+
+function readRealGamepadInput() {
+  const gamepad = getActiveGamepad();
+  if (!gamepad) return;
+
+  // Button 0 = A / Cross.
+  // Button 1 = B / Circle.
+  if (gamepadButtonPressedOnce(gamepad, 0)) {
+    handleActionButton("a");
+  }
+
+  if (gamepadButtonPressedOnce(gamepad, 1)) {
+    handleActionButton("b");
+  }
+
+  if (screenState !== "playing") return;
+
+  // Standard Gamepad API D-pad mapping:
+  // 12 = up
+  // 13 = down
+  // 14 = left
+  // 15 = right
+  let direction = null;
+
+  if (isGamepadButtonDown(gamepad, 12)) {
+    direction = "up";
+  } else if (isGamepadButtonDown(gamepad, 13)) {
+    direction = "down";
+  } else if (isGamepadButtonDown(gamepad, 14)) {
+    direction = "left";
+  } else if (isGamepadButtonDown(gamepad, 15)) {
+    direction = "right";
+  }
+
+  if (!direction) {
+    lastGamepadDpadDirection = null;
+    return;
+  }
+
+  const now = performance.now();
+
+  // Avoid flooding the movement queue while still allowing held D-pad control.
+  if (
+    direction === lastGamepadDpadDirection &&
+    now - lastGamepadDpadActionTime < GAMEPAD_DPAD_REPEAT_MS
+  ) {
+    return;
+  }
+
+  lastGamepadDpadDirection = direction;
+  lastGamepadDpadActionTime = now;
+
+  setQueuedDirection(direction);
+}
+
 /* ==========================
    WALKABLE + PORTALS
 ========================== */
@@ -3823,6 +3953,8 @@ function drawReadyOverlay() {}
 let lastFrameTime = 0;
 
 function update(time) {
+  readRealGamepadInput();
+
   const dt = lastFrameTime === 0
     ? 0
     : Math.min((time - lastFrameTime) / 1000, 0.05);
@@ -4119,6 +4251,19 @@ function showStartAfterLoadingPrompt() {
   window.addEventListener("keydown", startOnce);
   window.addEventListener("touchstart", startOnce);
   window.addEventListener("pointerdown", startOnce);
+
+  function pollGamepadStart() {
+    if (firstRuntimeStarted) return;
+
+    if (isGamepadStartPressed()) {
+      startOnce();
+      return;
+    }
+
+    requestAnimationFrame(pollGamepadStart);
+  }
+
+  requestAnimationFrame(pollGamepadStart);
 }
 
 function loadedAssetCountSafe() {
